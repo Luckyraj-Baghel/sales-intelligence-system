@@ -1,11 +1,11 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  UploadCloud, 
-  LogOut, 
-  TrendingUp, 
-  ShieldCheck, 
+import {
+  LayoutDashboard,
+  UploadCloud,
+  LogOut,
+  TrendingUp,
+  ShieldCheck,
   Package,
   Users,
   Briefcase,
@@ -25,12 +25,12 @@ export default function Layout() {
   };
 
   const navItems = [
-    { name: 'Executive Overview', path: '/', icon: LayoutDashboard },
-    { name: 'Product Analytics', path: '/products', icon: Package },
-    { name: 'Customer Cohorts', path: '/customers', icon: Users },
-    { name: 'Sales Team', path: '/sales-team', icon: Briefcase },
-    { name: 'Executive Reports', path: '/reports', icon: FileSpreadsheet },
-    { name: 'CSV Ingestion', path: '/import', icon: UploadCloud },
+    { name: 'Executive Overview', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Product Analytics', path: '/dashboard/products', icon: Package },
+    { name: 'Customer Cohorts', path: '/dashboard/customers', icon: Users },
+    { name: 'Sales Team', path: '/dashboard/sales-team', icon: Briefcase },
+    { name: 'Executive Reports', path: '/dashboard/reports', icon: FileSpreadsheet },
+    { name: 'CSV Ingestion', path: '/dashboard/import', icon: UploadCloud },
   ];
 
   return (
@@ -57,10 +57,9 @@ export default function Layout() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                        isActive
-                          ? 'bg-sky-50 text-sky-700 font-bold'
-                          : 'text-slate-600 hover:bg-slate-100/60 hover:text-slate-900'
+                      `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
+                        ? 'bg-sky-50 text-sky-700 font-bold'
+                        : 'text-slate-600 hover:bg-slate-100/60 hover:text-slate-900'
                       }`
                     }
                   >
