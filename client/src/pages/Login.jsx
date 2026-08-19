@@ -1,32 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../services/api';
-import { TrendingUp, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    try {
-      const res = await authAPI.login({ email, password });
-      if (res.data?.data?.token) {
-        login(res.data.data.user, res.data.data.token);
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Invalid credentials or network timeout');
-    } finally {
-      setLoading(false);
+    const res = await login(email.trim(), password);
+    if (res.success) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      setError(res.message);
     }
   };
 
@@ -38,7 +30,7 @@ export default function Login() {
             <TrendingUp className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Executive Workspace</h2>
-          <p className="text-xs text-slate-600 mt-1">Enter your credentials to access live analytics</p>
+          <p className="text-xs text-slate-600 mt-1">Enter your corporate credentials to access analytics</p>
         </div>
 
         {error && (
@@ -59,7 +51,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-xs font-medium"
-              placeholder="name@enterprise.com"
+              placeholder="admin@salesintel.com"
             />
           </div>
 

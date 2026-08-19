@@ -1,12 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
   });
   const [loading, setLoading] = useState(false);
 
@@ -18,11 +22,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      return { success: true };
+      return { success: true, user: userData };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed',
+        message: error.response?.data?.message || 'Invalid credentials or server timeout.',
       };
     } finally {
       setLoading(false);
