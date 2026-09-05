@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
-import { TrendingUp, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('analyst');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Bug #5 fix: pull login() from AuthContext so React user state is set after registration
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -19,11 +20,16 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const res = await authAPI.register({ name, email, password, role });
-      if (res.data?.data?.token) {
-        localStorage.setItem('token', res.data.data.token);
-        localStorage.setItem('user', JSON.stringify(res.data.data.user));
-        window.location.href = '/';
+      // Step 1: Create the account (role is always 'analyst' — Bug #2 fix)
+      await authAPI.register({ name, email, password, role: 'analyst' });
+
+      // Step 2: Sign in via AuthContext so setUser() is called and React state is correct
+      // Bug #5 fix: never use window.location.href or bypass AuthContext
+      const res = await login(email.trim(), password);
+      if (res.success) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        setError(res.message || 'Account created, but sign-in failed. Please log in.');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -93,18 +99,15 @@ export default function Register() {
             />
           </div>
 
+          {/* Bug #2 fix: Admin role removed — self-registration is analyst-only */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
               Platform Role
             </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-xs font-medium"
-            >
-              <option value="analyst">Business Analyst</option>
-              <option value="admin">Administrator / Executive</option>
-            </select>
+            <div className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500 cursor-not-allowed">
+              Business Analyst (default)
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">Admin access is granted by an existing administrator.</p>
           </div>
 
           <button

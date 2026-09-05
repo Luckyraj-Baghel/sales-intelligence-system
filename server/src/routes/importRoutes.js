@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const importController = require('../controllers/importController');
+const auth = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-// Route: POST /api/import/sales (Direct, without /v1)
-router.post('/sales', upload.single('file'), importController.uploadSalesCSV);
+// Route: POST /api/import/sales — requires valid JWT token (Bug #1 fix)
+router.post('/sales', auth, upload.single('file'), importController.uploadSalesCSV);
 
 module.exports = router;

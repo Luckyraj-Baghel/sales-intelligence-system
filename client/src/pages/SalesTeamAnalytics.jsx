@@ -5,6 +5,7 @@ import { Briefcase, Trophy, Target, Globe } from 'lucide-react';
 export default function SalesTeamAnalytics() {
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Bug #7 fix
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -13,6 +14,7 @@ export default function SalesTeamAnalytics() {
         setTeam(res.data.data || []);
       } catch (err) {
         console.error('Failed to load team analytics', err);
+        setError('Failed to load sales team data. Please try again.'); // Bug #7 fix
       } finally {
         setLoading(false);
       }
@@ -24,6 +26,18 @@ export default function SalesTeamAnalytics() {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-slate-600 font-semibold animate-pulse text-sm">Evaluating Representative Records...</div>
+      </div>
+    );
+  }
+
+  // Bug #7 fix: show visible error instead of blank page
+  if (error) {
+    return (
+      <div className="flex h-96 items-center justify-center p-8">
+        <div className="max-w-md w-full p-5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-sm font-semibold text-center">
+          <p className="text-base font-bold mb-1">Sales team data failed to load</p>
+          <p className="text-xs font-medium text-rose-600">{error}</p>
+        </div>
       </div>
     );
   }

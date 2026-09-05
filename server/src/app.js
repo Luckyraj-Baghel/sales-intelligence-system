@@ -11,7 +11,27 @@ const importRoutes = require('./routes/importRoutes');
 const app = express();
 
 // Middlewares
-app.use(cors());
+// Allow requests from both the production frontend (CLIENT_URL in .env) and
+// localhost during development. Using a function lets us support multiple origins
+// without opening CORS to everyone.
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5174', // Vite sometimes picks an alternate port
+  process.env.CLIENT_URL,  // e.g. https://sales-intelligence-system.vercel.app
+].filter(Boolean).map((o) => o.replace(/\/$/, '')); // strip any trailing slash
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Mount API Routes (Clean routes without /v1)

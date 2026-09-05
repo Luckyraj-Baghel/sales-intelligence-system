@@ -50,6 +50,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Bug #7 fix: track API errors visibly
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
@@ -57,6 +58,7 @@ export default function Dashboard() {
 
   const fetchDashboard = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await analyticsAPI.getDashboardData({
         startDate: startDate || undefined,
@@ -67,13 +69,23 @@ export default function Dashboard() {
       setData(res.data.data);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
+      // Bug #7 fix: surface the error to the user instead of silently swallowing it
+      setError('Failed to load dashboard data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Bug #9 fix: debounce the effect so date-field keystrokes don't fire an API
+  // request on every character. Selects (region/category) fire immediately.
   useEffect(() => {
-    fetchDashboard();
+    const isDateComplete = (d) => !d || d.length === 10;
+    if (!isDateComplete(startDate) || !isDateComplete(endDate)) return;
+
+    const timer = setTimeout(() => {
+      fetchDashboard();
+    }, 350);
+    return () => clearTimeout(timer);
   }, [startDate, endDate, regionFilter, categoryFilter]);
 
   const resetFilters = () => {
@@ -91,6 +103,24 @@ export default function Dashboard() {
           <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
             Aggregating PostgreSQL Metrics...
           </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Bug #7 fix: render a visible error state
+  if (error && !data) {
+    return (
+      <div className="flex h-96 items-center justify-center p-8">
+        <div className="max-w-md w-full p-5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-sm font-semibold text-center">
+          <p className="text-base font-bold mb-1">Dashboard failed to load</p>
+          <p className="text-xs font-medium text-rose-600">{error}</p>
+          <button
+            onClick={fetchDashboard}
+            className="mt-4 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

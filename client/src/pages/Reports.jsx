@@ -27,8 +27,9 @@ export default function Reports() {
   const handleExportCSV = () => {
     if (!dashboardData?.topProducts) return;
     const headers = 'Product Name,Category,Units Sold,Gross Revenue\n';
+    // Bug #6 fix: API returns 'total_units_sold', not 'units_sold'
     const rows = dashboardData.topProducts
-      .map((p) => `"${p.product_name}","${p.category_name}",${p.units_sold},${p.gross_revenue}`)
+      .map((p) => `"${p.product_name}","${p.category_name}",${p.total_units_sold},${p.gross_revenue}`)
       .join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -113,7 +114,7 @@ export default function Reports() {
               <tr key={idx}>
                 <td className="px-6 py-3.5 font-bold text-slate-900">{p.product_name}</td>
                 <td className="px-6 py-3.5 text-slate-600">{p.category_name}</td>
-                <td className="px-6 py-3.5 text-right text-slate-700">{p.units_sold}</td>
+                <td className="px-6 py-3.5 text-right text-slate-700">{p.total_units_sold}</td>
                 <td className="px-6 py-3.5 text-right font-bold text-slate-900">
                   ₹{Number(p.gross_revenue).toLocaleString('en-IN')}
                 </td>

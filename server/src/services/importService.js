@@ -74,11 +74,9 @@ class ImportService {
           }
         })
         .on('end', async () => {
-          try {
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-          } catch (_) {}
-
           if (validRows.length === 0) {
+            // No valid rows — safe to delete the file now
+            try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
             return resolve({
               importedCount: 0,
               rejectedCount: rejectedRows.length,
@@ -87,8 +85,11 @@ class ImportService {
             });
           }
 
+          // Bug #4 fix: Acquire a dedicated pool client so BEGIN/INSERT/COMMIT all
+          // execute on the same physical DB connection (pool.query() can switch connections).
+          const client = await db.getClient();
           try {
-            await db.query('BEGIN');
+            await client.query('BEGIN');
 
             const batchSize = 150;
             for (let i = 0; i < validRows.length; i += batchSize) {
@@ -103,7 +104,7 @@ class ImportService {
                 orderParams.push(r.customerId, r.regionId, r.salespersonId, r.orderDate, r.subtotal);
               });
 
-              const orderRes = await db.query(
+              const orderRes = await client.query(
                 `INSERT INTO orders (customer_id, region_id, salesperson_id, order_date, total_amount, status)
                  VALUES ${orderPlaceholders.join(', ')} RETURNING id;`,
                 orderParams
@@ -121,15 +122,18 @@ class ImportService {
                 itemParams.push(oId, r.productId, r.quantity, r.unitPrice, r.subtotal);
               });
 
-              await db.query(
+              await client.query(
                 `INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal)
                  VALUES ${itemPlaceholders.join(', ')};`,
                 itemParams
               );
             }
 
-            await db.query('COMMIT');
+            await client.query('COMMIT');
             console.log(`[CSV INGESTION] Committed ${validRows.length} records successfully.`);
+
+            // Bug #3 fix: Delete the uploaded file only AFTER a successful COMMIT
+            try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (_) {}
 
             resolve({
               importedCount: validRows.length,
@@ -138,9 +142,13 @@ class ImportService {
               message: `Transaction committed successfully. Ingested ${validRows.length} rows.`,
             });
           } catch (dbErr) {
-            await db.query('ROLLBACK');
+            await client.query('ROLLBACK');
             console.error('[CSV INGESTION DB ERROR]', dbErr);
+            // File is NOT deleted on error so the user can retry
             reject(new Error(dbErr.message || 'Database transaction failed'));
+          } finally {
+            // Always release the client back to the pool
+            client.release();
           }
         })
         .on('error', (err) => {
@@ -151,4 +159,4 @@ class ImportService {
   }
 }
 
-module.exports = ImportService;
+module.exports = ImportService;

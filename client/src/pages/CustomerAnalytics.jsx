@@ -5,6 +5,7 @@ import { Users, Crown, RefreshCcw, UserCheck, Mail, Calendar } from 'lucide-reac
 export default function CustomerAnalytics() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Bug #7 fix
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -13,6 +14,7 @@ export default function CustomerAnalytics() {
         setCustomers(res.data.data || []);
       } catch (err) {
         console.error('Failed to load customer analytics', err);
+        setError('Failed to load customer data. Please try again.'); // Bug #7 fix
       } finally {
         setLoading(false);
       }
@@ -24,6 +26,18 @@ export default function CustomerAnalytics() {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-slate-600 font-semibold animate-pulse text-sm">Aggregating Customer Profiles...</div>
+      </div>
+    );
+  }
+
+  // Bug #7 fix: show visible error instead of blank page
+  if (error) {
+    return (
+      <div className="flex h-96 items-center justify-center p-8">
+        <div className="max-w-md w-full p-5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-sm font-semibold text-center">
+          <p className="text-base font-bold mb-1">Customer data failed to load</p>
+          <p className="text-xs font-medium text-rose-600">{error}</p>
+        </div>
       </div>
     );
   }

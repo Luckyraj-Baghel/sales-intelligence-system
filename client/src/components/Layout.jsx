@@ -97,7 +97,10 @@ export default function Layout() {
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
             <span>Sales Intelligence</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-slate-900 capitalize">{location.pathname.replace('/', '') || 'Overview'}</span>
+            {/* Bug #10 fix: look up the friendly label from navItems instead of showing the raw URL path */}
+            <span className="text-slate-900">
+              {navItems.find((item) => item.path === location.pathname)?.name || 'Overview'}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
             <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />

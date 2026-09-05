@@ -1,15 +1,20 @@
-const { Pool } = require('pg');
+const { neon } = require('@neondatabase/serverless');
+const { Pool } = require('@neondatabase/serverless');
+const ws = require('ws');
 require('dotenv').config();
 
-const pool = new Pool({
-  connectionString: (process.env.DATABASE_URL || '').trim(),
-  ssl: {
-    rejectUnauthorized: false
-  },
-  connectionTimeoutMillis: 15000,
-  idleTimeoutMillis: 30000,
-  max: 10
-});
+// Production (Vercel serverless) uses the Neon pooler URL with @neondatabase/serverless.
+// neonConfig.webSocketConstructor is set for Node.js environments (local/server).
+const { neonConfig } = require('@neondatabase/serverless');
+neonConfig.webSocketConstructor = ws;
+
+const connectionString = (process.env.DATABASE_URL || '').trim();
+
+// neon() — HTTP client for single queries (stateless, works everywhere)
+const sql = neon(connectionString);
+
+// Pool — WebSocket-based client for transactions (BEGIN/COMMIT on one connection)
+const pool = new Pool({ connectionString });
 
 pool.on('connect', () => {
   console.log('PostgreSQL Database Connected Successfully');
@@ -20,6 +25,10 @@ pool.on('error', (err) => {
 });
 
 module.exports = {
-  query: (text, params) => pool.query(text, params),
+  query: async (text, params) => {
+    const result = await sql.query(text, params || []);
+    return { rows: result.rows };
+  },
   getClient: () => pool.connect()
 };
+
